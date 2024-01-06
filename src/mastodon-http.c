@@ -109,8 +109,24 @@ struct http_request *mastodon_http(struct im_connection *ic, char *url_string, h
 	}
 
 	// Make the request.
-	GString *request = g_string_new("");
-	g_string_printf(request, "%s %s%s%s HTTP/1.1\r\n"
+	if (streaming_url && strstr(base_url, "streaming") != NULL) 
+	{
+		GString *request = g_string_new("");
+		g_string_printf(request, "%s %s%s%s HTTP/1.1\r\n"
+	                "Host: %s\r\n"
+	                "User-Agent: BitlBee " BITLBEE_VERSION "\r\n"
+			"Authorization: Bearer %s\r\n",
+	                request_method,
+	                base_url ? base_url->file : url_string,
+	                method == HTTP_GET && url_arguments[0] ? "?" : "",
+			method == HTTP_GET && url_arguments[0] ? url_arguments : "",
+	                streaming_url ? streaming_url->host : md->url_host,
+			md->oauth2_access_token);
+	}
+	else
+	{
+		GString *request = g_string_new("");
+		g_string_printf(request, "%s %s%s%s HTTP/1.1\r\n"
 	                "Host: %s\r\n"
 	                "User-Agent: BitlBee " BITLBEE_VERSION "\r\n"
 			"Authorization: Bearer %s\r\n",
@@ -120,7 +136,8 @@ struct http_request *mastodon_http(struct im_connection *ic, char *url_string, h
 			method == HTTP_GET && url_arguments[0] ? url_arguments : "",
 	                base_url ? base_url->host : md->url_host,
 			md->oauth2_access_token);
-
+	}
+		
 	// Do POST stuff..
 	if (method != HTTP_GET) {
 		// Append the Content-Type and url-encoded arguments.
@@ -133,10 +150,16 @@ struct http_request *mastodon_http(struct im_connection *ic, char *url_string, h
 		g_string_append(request, "\r\n");
 	}
 
-	if (base_url) {
+	if (base_url && streaming_url == NULL) {
 		ret = http_dorequest(base_url->host, base_url->port, base_url->proto == PROTO_HTTPS, request->str, func,
 		                     data);
-	} else {
+	} 
+	else if (streaming_url)
+	{
+		ret = http_dorequest(streaming_url->host, base_url->port, base_url->proto == PROTO_HTTPS, request->str, func,
+		                     data);
+	}
+	else {
 		ret = http_dorequest(md->url_host, md->url_port, md->url_ssl, request->str, func, data);
 	}
 
