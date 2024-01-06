@@ -383,33 +383,40 @@ static void mastodon_set_name(struct im_connection *ic)
 /**
  * Connect to Mastodon server, using the data we saved in the account.
  */
-static void mastodon_connect(struct im_connection *ic)
+static void mastodon_connect(struct im_connection *ic1, struct im_connection *ic2)
 {
-	struct mastodon_data *md = ic->proto_data;
+	struct mastodon_data *md = ic1->proto_data;
 	url_t url;
 	char *s;
 
-	imcb_log(ic, "Connecting");
+	imcb_log(ic1, "Connecting");
 
-	if (!url_set(&url, set_getstr(&ic->acc->set, "base_url")) ||
+	if (!url_set(&url, set_getstr(&ic1->acc->set, "base_url")) ||
 	    url.proto != PROTO_HTTPS) {
-		imcb_error(ic, "Incorrect API base URL: %s", set_getstr(&ic->acc->set, "base_url"));
-		imc_logout(ic, FALSE);
+		imcb_error(ic1, "Incorrect API base URL: %s", set_getstr(&ic1->acc->set, "base_url"));
+		imc_logout(ic1, FALSE);
 		return;
 	}
 
+	if (!url_set(&url, set_getstr(&ic2->acc->set, "streaming_url")) ||
+	    url.proto != PROTO_HTTPS) {
+		imcb_error(ic2, "Incorrect streaming API base URL: %s", set_getstr(&ic2->acc->set, "streaming_url"));
+		imc_logout(ic2, FALSE);
+		return;
+	}
+	
 	md->url_ssl = url.proto == PROTO_HTTPS; // always
 	md->url_port = url.port;
 	md->url_host = g_strdup(url.host);
 
-	mastodon_set_name(ic);
-	imcb_add_buddy(ic, md->name, NULL);
-	imcb_buddy_status(ic, md->name, OPT_LOGGED_IN, NULL, NULL);
+	mastodon_set_name(ic1);
+	imcb_add_buddy(ic1, md->name, NULL);
+	imcb_buddy_status(ic1, md->name, OPT_LOGGED_IN, NULL, NULL);
 
 	md->log = g_new0(struct mastodon_log_data, MASTODON_LOG_LENGTH);
 	md->log_id = -1;
 
-	s = set_getstr(&ic->acc->set, "mode");
+	s = set_getstr(&ic1->acc->set, "mode");
 	if (g_ascii_strcasecmp(s, "one") == 0) {
 		md->flags |= MASTODON_MODE_ONE;
 	} else if (g_ascii_strcasecmp(s, "many") == 0) {
@@ -429,8 +436,8 @@ static void mastodon_connect(struct im_connection *ic)
 		mastodon_groupchat_init(ic);
 	}
 
-	mastodon_initial_timeline(ic);
-	mastodon_open_user_stream(ic);
+	mastodon_initial_timeline(ic1);
+	mastodon_open_user_stream(ic2);
 	ic->flags |= OPT_PONGS;
 }
 
