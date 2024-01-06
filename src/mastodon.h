@@ -163,6 +163,11 @@ struct mastodon_data {
 	int url_port;
 	char *url_host;
 
+	/* set streaming_url */
+	gboolean streaming_url_ssl;
+	int streaming_url_port;
+	char *streaming_url_host;
+
 	char *name; /* Used to generate contact + channel name. */
 
 	/* set show_ids */
