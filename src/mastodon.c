@@ -323,6 +323,7 @@ no_instance_in_username:
 	s = set_add(&acc->set, "auto_reply_timeout", "10800", set_eval_int, acc);
 
 	s = set_add(&acc->set, "base_url", base_url, NULL, acc);
+	s = set_add(&acc->set, "streaming_url", streaming_url, NULL, acc);
 	s->flags |= ACC_SET_OFFLINE_ONLY;
 
 	s = set_add(&acc->set, "commands", "true", set_eval_commands, acc);
