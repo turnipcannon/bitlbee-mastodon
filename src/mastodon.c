@@ -266,6 +266,7 @@ static void mastodon_init(account_t * acc)
 
 	size_t handle_sz = strlen(handle);
 	char const* base_url;
+	char const* streaming_url;
 
 	while (*handle != '@') {
 		if (*handle == 0) {
@@ -301,6 +302,21 @@ static void mastodon_init(account_t * acc)
 		base_url = endpoint;
 	}
 
+	/* oh my god I hate C so fucking much */ {
+		char const* stream_instance = handle + 1;
+		char* stream_endpoint = alloca( /* using alloca instead of VLAs to
+									avoid thorny scope problems */
+			endpoint_sz +
+			sizeof "https://" +
+			1 /* trailing nul */
+		);
+
+		char* stream_eptr = stream_endpoint;
+		stream_eptr = g_stpcpy(stream_eptr, "https://");
+		stream_eptr = g_stpcpy(stream_eptr, stream_instance);
+
+		streaming_url = stream_endpoint;
+	}
 no_instance_in_username:
 	if (change_user_name) {
 		char saved_str [handle_sz + 1]; g_stpcpy(saved_str, new_user_name);
